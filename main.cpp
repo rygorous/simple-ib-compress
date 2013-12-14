@@ -354,8 +354,8 @@ static bool tri_has_edge(const int *tri, int a, int b)
 
 static void analyze_inds(const std::vector<int>& inds)
 {
-    size_t num_single = 0;
-    size_t num_pairs = 0;
+    int num_single = 0;
+    int num_pairs = 0;
 
     for (size_t base = 0; base < inds.size(); )
     {
@@ -548,7 +548,7 @@ int main()
     Mesh m;
     read_mesh(&m, "Armadillo.bin");
 
-    printf("%d verts, %d inds.\n", m.verts.size(), m.inds.size());
+    printf("%d verts, %d inds.\n", (int) m.verts.size(), (int) m.inds.size());
 
     printf("before:\n");
     DumpCacheEfficiency(&m.inds[0], m.inds.size());
@@ -561,10 +561,10 @@ int main()
 
     std::vector<int> packed_inds, unpacked_inds;
     pack_inds(packed_inds, m.inds);
-    printf("%d inds packed\n", packed_inds.size());
+    printf("%d inds packed\n", (int) packed_inds.size());
 
     unpack_inds(unpacked_inds, packed_inds);
-    printf("%d inds unpacked\n", unpacked_inds.size());
+    printf("%d inds unpacked\n", (int) unpacked_inds.size());
 
     // check that unpacking works
     if (!inds_match(m.inds, unpacked_inds))
