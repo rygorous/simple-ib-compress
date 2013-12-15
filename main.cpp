@@ -424,11 +424,10 @@ static void analyze_inds(const std::vector<int>& inds)
     }
 
     int count = inds.size();
-    int strip_ib_size = 4*num_single + 5*num_pairs;
     int fancy_ib_size = 3*num_single + 4*num_pairs;
 
     printf("%d paired tris, %d single\n", num_pairs * 2, num_single);
-    printf("IB inds: list=%d, strip=%d (%.2f%%), fancy=%d (%.2f%%)\n", count, strip_ib_size, 100.0f * (strip_ib_size - count) / count, fancy_ib_size, 100.0f * (fancy_ib_size - count) / count);
+    printf("IB inds: list=%d, fancy=%d (%.2f%%)\n", count, fancy_ib_size, 100.0f * (fancy_ib_size - count) / count);
 }
 
 static void add_tri(std::vector<int>& out_inds, int a, int b, int c)
