@@ -325,6 +325,29 @@ struct Mesh
     std::vector<int> inds;
 };
 
+static void renumber_verts(Mesh *m)
+{
+    std::vector<int> old_to_new;
+    std::vector<Vert> new_verts;
+
+    old_to_new.resize(m->verts.size(), -1);
+    new_verts.reserve(m->verts.size());
+
+    // construct mapping and new VB
+    for (int &ind : m->inds)
+    {
+        if (old_to_new[ind] == -1) // first time we see this vert
+        {
+            old_to_new[ind] = (int)new_verts.size();
+            new_verts.push_back(m->verts[ind]);
+        }
+        ind = old_to_new[ind];
+    }
+
+    // switch to new VB
+    m->verts.swap(new_verts);
+}
+
 static void read_mesh(Mesh *mesh, const char *filename)
 {
     mesh->verts.clear();
@@ -341,6 +364,21 @@ static void read_mesh(Mesh *mesh, const char *filename)
 
     fread(&mesh->verts[0], sizeof(Vert), nverts, f);
     fread(&mesh->inds[0], sizeof(int), ninds, f);
+
+    fclose(f);
+}
+
+static void write_mesh(const char *filename, const Mesh& mesh)
+{
+    FILE *f = fopen(filename, "wb");
+
+    int nverts = mesh.verts.size();
+    int ninds = mesh.inds.size();
+    fwrite(&nverts, sizeof(int), 1, f);
+    fwrite(&ninds, sizeof(int), 1, f);
+
+    fwrite(&mesh.verts[0], sizeof(Vert), nverts, f);
+    fwrite(&mesh.inds[0], sizeof(int), ninds, f);
 
     fclose(f);
 }
@@ -555,6 +593,7 @@ int main()
     analyze_inds(m.inds);
 
     OptimizeIndexOrder(&m.inds[0], m.inds.size(), m.verts.size());
+    renumber_verts(&m);
     printf("after:\n");
     DumpCacheEfficiency(&m.inds[0], m.inds.size());
     analyze_inds(m.inds);
@@ -573,6 +612,11 @@ int main()
         printf("index buffers match.\n");
 
     DumpCacheEfficiency(&unpacked_inds[0], unpacked_inds.size());
+
+    write_mesh("Armadillo_vcache.bin", m);
+
+    m.inds = packed_inds;
+    write_mesh("Armadillo_post.bin", m);
 
     return 0;
 }
