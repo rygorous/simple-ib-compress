@@ -593,7 +593,7 @@ static void watermark_transform(std::vector<int>& out_inds, const std::vector<in
     }
 }
 
-static void reverse_watermark_transform(std::vector<int>& out_inds, const std::vector<int>& in_inds, int max_step)
+static void inverse_watermark_transform(std::vector<int>& out_inds, const std::vector<int>& in_inds, int max_step)
 {
     int hi = max_step - 1; // high watermark
     out_inds.clear();
@@ -611,7 +611,7 @@ static void watermark_transform_and_check(std::vector<int>& out_inds, const std:
 {
     std::vector<int> temp;
     watermark_transform(out_inds, in_inds, max_step);
-    reverse_watermark_transform(temp, out_inds, max_step);
+    inverse_watermark_transform(temp, out_inds, max_step);
     assert(std::equal(temp.begin(), temp.end(), in_inds.begin()));
 }
 
