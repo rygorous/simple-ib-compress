@@ -368,17 +368,17 @@ static void read_mesh(Mesh *mesh, const char *filename)
     fclose(f);
 }
 
-static void write_mesh(const char *filename, const Mesh& mesh)
+static void write_mesh(const char *filename, const std::vector<Vert>& verts, const std::vector<int>& inds)
 {
     FILE *f = fopen(filename, "wb");
 
-    int nverts = mesh.verts.size();
-    int ninds = mesh.inds.size();
+    int nverts = verts.size();
+    int ninds = inds.size();
     fwrite(&nverts, sizeof(int), 1, f);
     fwrite(&ninds, sizeof(int), 1, f);
 
-    fwrite(&mesh.verts[0], sizeof(Vert), nverts, f);
-    fwrite(&mesh.inds[0], sizeof(int), ninds, f);
+    fwrite(&verts[0], sizeof(Vert), nverts, f);
+    fwrite(&inds[0], sizeof(int), ninds, f);
 
     fclose(f);
 }
@@ -580,6 +580,41 @@ static bool inds_match(const std::vector<int>& inds0, const std::vector<int>& in
     return true;
 }
 
+static void watermark_transform(std::vector<int>& out_inds, const std::vector<int>& in_inds, int max_step)
+{
+    int hi = max_step - 1; // high watermark
+    out_inds.clear();
+    out_inds.reserve(in_inds.size());
+    for (int v : in_inds)
+    {
+        assert(v <= hi);
+        out_inds.push_back(hi - v);
+        hi = std::max(hi, v + max_step);
+    }
+}
+
+static void reverse_watermark_transform(std::vector<int>& out_inds, const std::vector<int>& in_inds, int max_step)
+{
+    int hi = max_step - 1; // high watermark
+    out_inds.clear();
+    out_inds.reserve(in_inds.size());
+    for (int v : in_inds)
+    {
+        assert(v <= hi);
+        v = hi - v;
+        out_inds.push_back(v);
+        hi = std::max(hi, v + max_step);
+    }
+}
+
+static void watermark_transform_and_check(std::vector<int>& out_inds, const std::vector<int>& in_inds, int max_step)
+{
+    std::vector<int> temp;
+    watermark_transform(out_inds, in_inds, max_step);
+    reverse_watermark_transform(temp, out_inds, max_step);
+    assert(std::equal(temp.begin(), temp.end(), in_inds.begin()));
+}
+
 int main()
 {
     Mesh m;
@@ -612,10 +647,17 @@ int main()
 
     DumpCacheEfficiency(&unpacked_inds[0], unpacked_inds.size());
 
-    write_mesh("Armadillo_vcache.bin", m);
+    write_mesh("Armadillo_vcache.bin", m.verts, m.inds);
 
-    m.inds = packed_inds;
-    write_mesh("Armadillo_post.bin", m);
+    std::vector<int> watermark_inds;
+    watermark_transform_and_check(watermark_inds, m.inds, 1);
+    write_mesh("Armadillo_vcache_wmark.bin", m.verts, watermark_inds);
+
+    write_mesh("Armadillo_post.bin", m.verts, packed_inds);
+    
+    std::vector<int> watermark_packed_inds;
+    watermark_transform_and_check(watermark_packed_inds, packed_inds, 3);
+    write_mesh("Armadillo_post_wmark.bin", m.verts, watermark_packed_inds);
 
     return 0;
 }
